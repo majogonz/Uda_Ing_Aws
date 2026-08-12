@@ -141,7 +141,7 @@ staging_songs_copy = ("""
 
 songplay_table_insert = ("""
     INSERT INTO songplays (start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)
-    SELECT
+    SELECT DISTINCT
         TIMESTAMP 'epoch' + (se.ts / 1000) * INTERVAL '1 second' AS start_time,
         se.userId,
         se.level,
@@ -197,7 +197,7 @@ artist_table_insert = ("""
 
 time_table_insert = ("""
     INSERT INTO time (start_time, hour, day, week, month, year, weekday)
-    SELECT
+    SELECT DISTINCT
         start_time,
         EXTRACT(hour FROM start_time),
         EXTRACT(day FROM start_time),
