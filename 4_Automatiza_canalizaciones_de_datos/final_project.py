@@ -14,7 +14,6 @@ default_args = {
     'start_date': datetime(2020, 1, 1),
     'retries': 3,
     'retry_delay': timedelta(minutes=5),
-    'catchup': False,
     'email_on_retry': False,
 }
 
@@ -23,6 +22,7 @@ dag = DAG(
     default_args=default_args,
     description='Load and transform data in Redshift with Airflow',
     schedule_interval='@hourly',
+    catchup=False,
     max_active_runs=1,
 )
 
@@ -94,11 +94,21 @@ load_time_dimension_table = LoadDimensionOperator(
     truncate=True
 )
 
+dq_checks = [
+    {'check_sql': "SELECT COUNT(*) FROM songplays", 'expected_result': 0, 'comparison': '>'},
+    {'check_sql': "SELECT COUNT(*) FROM users", 'expected_result': 0, 'comparison': '>'},
+    {'check_sql': "SELECT COUNT(*) FROM songs", 'expected_result': 0, 'comparison': '>'},
+    {'check_sql': "SELECT COUNT(*) FROM artists", 'expected_result': 0, 'comparison': '>'},
+    {'check_sql': "SELECT COUNT(*) FROM time", 'expected_result': 0, 'comparison': '>'},
+    {'check_sql': "SELECT COUNT(*) FROM songplays WHERE songplay_id IS NULL", 'expected_result': 0, 'comparison': '='},
+    {'check_sql': "SELECT COUNT(*) FROM users WHERE user_id IS NULL", 'expected_result': 0, 'comparison': '='},
+]
+
 run_quality_checks = DataQualityOperator(
     task_id='Run_data_quality_checks',
     dag=dag,
     redshift_conn_id='redshift',
-    tables=['songplays', 'users', 'songs', 'artists', 'time']
+    dq_checks=dq_checks
 )
 
 end_operator = DummyOperator(task_id='Stop_execution', dag=dag)
